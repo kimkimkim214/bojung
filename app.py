@@ -66,8 +66,56 @@ def transfer_style_gemini(original_img, reference_img):
     return result_img
 
 
+PASTE_JS = """
+() => {
+    let lastHoveredId = null;
+    const TARGET_IDS = ['img_original', 'img_reference'];
+
+    function setupHoverTracking() {
+        TARGET_IDS.forEach(id => {
+            const el = document.querySelector('#' + id);
+            if (el) {
+                el.addEventListener('mouseenter', () => { lastHoveredId = id; });
+            }
+        });
+    }
+
+    document.addEventListener('paste', e => {
+        const imgItem = Array.from(e.clipboardData?.items ?? []).find(
+            i => i.kind === 'file' && i.type.startsWith('image/')
+        );
+        if (!imgItem) return;
+
+        const targetId = lastHoveredId ?? TARGET_IDS[0];
+        const container = document.querySelector('#' + targetId);
+        if (!container) return;
+
+        const fileInput = container.querySelector('input[type="file"]');
+        if (!fileInput) return;
+
+        const file = imgItem.getAsFile();
+        if (!file) return;
+
+        e.preventDefault();
+        const dt = new DataTransfer();
+        dt.items.add(new File([file], 'paste.png', { type: file.type }));
+        fileInput.files = dt.files;
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // 컴포넌트가 DOM에 렌더링될 때까지 대기
+    const timer = setInterval(() => {
+        const ready = TARGET_IDS.every(id => document.querySelector('#' + id));
+        if (ready) {
+            setupHoverTracking();
+            clearInterval(timer);
+        }
+    }, 300);
+}
+"""
+
 # Gradio UI 구성
-with gr.Blocks(title="Gemini 이미지 스타일 트랜스퍼") as demo:
+with gr.Blocks(title="Gemini 이미지 스타일 트랜스퍼", js=PASTE_JS) as demo:
     gr.Markdown("# Gemini 이미지 스타일 트랜스퍼")
     gr.Markdown("원본 이미지의 구조는 그대로 유지하면서 참고 이미지의 채색 스타일을 적용합니다.")
 
@@ -79,11 +127,13 @@ with gr.Blocks(title="Gemini 이미지 스타일 트랜스퍼") as demo:
                 label="원본 이미지 (구조 고정용)",
                 type="pil",
                 sources=["upload", "clipboard"],
+                elem_id="img_original",
             )
             img_reference = gr.Image(
                 label="참고 이미지 (채색 스타일용)",
                 type="pil",
                 sources=["upload", "clipboard"],
+                elem_id="img_reference",
             )
             btn_generate = gr.Button("스타일 융합하기", variant="primary")
 

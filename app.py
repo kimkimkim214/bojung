@@ -78,10 +78,12 @@ with gr.Blocks(title="Gemini 이미지 스타일 트랜스퍼") as demo:
             img_original = gr.Image(
                 label="원본 이미지 (구조 고정용)",
                 type="pil",
+                sources=["upload", "clipboard"],
             )
             img_reference = gr.Image(
                 label="참고 이미지 (채색 스타일용)",
                 type="pil",
+                sources=["upload", "clipboard"],
             )
             btn_generate = gr.Button("스타일 융합하기", variant="primary")
 

@@ -1,0 +1,10 @@
+costs:
+  effective_date: "2026-04-29"
+  commission_per_share: 0.0
+  sec_fee_rate_sell: 0.0000278
+  finra_taf_per_share_sell: 0.000166
+  finra_taf_cap_per_trade: 8.30
+  slippage_bps_large_cap: 5
+  slippage_bps_mid_small: 15
+  slippage_bps_pead: 30
+  slippage_bps_overnight_gap: 25

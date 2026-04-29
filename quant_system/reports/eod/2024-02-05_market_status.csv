@@ -1,0 +1,2 @@
+signal_date,execution_date,regime,fast_risk_score,slow_risk_score,risk_on_score,overshoot_score,hy_spread_stress,spy_200dma_break,risk_off_confirmed,overshoot_tier,allowed_position_min,allowed_position_max,allowed_risk_budget_pct,single_trade_risk_pct,fast_risk_lt60_streak,risk_off_confirmed_streak,risk_off_release_streak,notes
+2024-02-05,2024-02-06,CAUTION,48.0,36.5,39.0,0.0,30.0,50.0,False,Healthy (<60),3,8,2.5%,0.500%,25,0,0,Breadth = 현재 SPX 구성 기준 (Survivorship Bias 가능)

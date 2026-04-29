@@ -1,0 +1,48 @@
+paper_trading:
+  equity: 100000
+  gross_capacity: 100000
+
+  regime_risk_per_trade:
+    HEALTHY_RISK_ON: 0.0125
+    NORMAL_RISK_ON: 0.010
+    OVERHEAT_CAUTION: 0.0075
+    OVERHEATED_RISK_ON: 0.0
+    CAUTION: 0.005
+    RISK_OFF: 0.0
+    WARNING: 0.0025
+    FAST_CRASH: 0.0
+
+  regime_total_risk_budget:
+    HEALTHY_RISK_ON: 0.10
+    NORMAL_RISK_ON: 0.07
+    OVERHEAT_CAUTION: 0.05
+    OVERHEATED_RISK_ON: 0.05
+    CAUTION: 0.025
+    RISK_OFF: 0.01
+    WARNING: 0.015
+    FAST_CRASH: 0.0
+
+  regime_equity_exposure:
+    HEALTHY_RISK_ON: 1.00
+    NORMAL_RISK_ON: 0.80
+    OVERHEAT_CAUTION: 0.70
+    OVERHEATED_RISK_ON: 0.80
+    CAUTION: 0.50
+    RISK_OFF: 0.20
+    WARNING: 0.35
+    FAST_CRASH: 0.10
+
+  sector_capacity_pct: 0.25
+  industry_capacity_pct: 0.20
+  megacap_capacity_pct: 0.40
+  max_position_weight: 0.10
+
+  candidate_count:
+    HEALTHY_RISK_ON: [12, 20]
+    NORMAL_RISK_ON: [8, 15]
+    OVERHEAT_CAUTION: [5, 10]
+    OVERHEATED_RISK_ON: [0, 0]
+    CAUTION: [3, 8]
+    RISK_OFF: [0, 3]
+    WARNING: [2, 5]
+    FAST_CRASH: [0, 0]

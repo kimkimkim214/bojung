@@ -1,0 +1,55 @@
+fast_crash:
+  entry: 75
+  maintain: 60
+  release_days: 2
+
+risk_off:
+  slow_risk_min: 70
+  hy_spread_stress_min: 60
+  spy_200dma_break_min: 50
+  confirm_days: 2
+  release_days: 2
+
+risk_on:
+  healthy_threshold: 75
+  healthy_hysteresis: 65
+  normal_threshold: 55
+  normal_hysteresis: 45
+  caution_threshold: 35
+  caution_hysteresis: 25
+
+overshoot:
+  overheated_threshold: 75
+  caution_threshold: 60
+
+fast_risk_weights:
+  vix_level: 0.30
+  vix_3d_change: 0.25
+  spy_3d_return: 0.20
+  qqq_20dma_break: 0.15
+  gap_down_breadth: 0.10
+
+slow_risk_weights:
+  hy_spread_stress: 0.30
+  spy_200dma_break: 0.25
+  gold_spy_rs: 0.20
+  tlt_spy_rs: 0.15
+  yield_structure: 0.10
+
+risk_on_weights:
+  index_trend: 0.25
+  vix_stability: 0.20
+  market_breadth: 0.20
+  breakout_expansion: 0.20
+  credit_stability: 0.15
+
+overshoot_weights:
+  ma_extension: 0.30
+  rsi_14: 0.25
+  return_acceleration: 0.20
+  gap_score: 0.15
+  breadth_divergence: 0.10
+
+benchmark_overshoot_weights:
+  qqq: 0.65
+  spy: 0.35

@@ -1,0 +1,43 @@
+baskets:
+  quality_growth:
+    weight: 0.50
+    conditions:
+      min_revenue_growth_yoy: 0.05
+      min_gross_margin: 0.30
+      min_roic: 0.10
+      min_fcf_positive: true
+      above_200dma: true
+
+  shareholder_yield:
+    weight: 0.30
+    conditions:
+      min_buyback_yield: 0.01
+      min_fcf_yield: 0.03
+      max_debt_to_equity: 2.0
+
+  turnaround:
+    weight: 0.20
+    max_weight: 0.20
+    conditions:
+      recovering_above_200dma: true
+      rs_rank_improving: true
+    restrictions:
+      no_pyramiding: true
+      exit_before_earnings: true
+
+concentration_limits:
+  single_stock_max: 0.10
+  single_stock_max_loss: 0.0125
+  sector_default: 0.25
+  sector_leading: 0.35
+  industry_default: 0.20
+  industry_max: 0.25
+  megacap_top10_max: 0.40
+  single_megacap_max: 0.10
+  same_theme_max: 0.25
+
+min_entry_conditions:
+  rs_rank_min: 70
+  above_50dma: true
+  above_200dma: true
+  max_drawdown_from_52w_high: 0.15

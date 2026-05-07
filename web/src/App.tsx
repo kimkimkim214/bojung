@@ -20,7 +20,7 @@ import {
   X
 } from 'lucide-react';
 import { KanjiItem, AppPhase, StudyMode } from './types';
-import { fetchKanjiSet, getApiKey, setApiKey, getDefaultApiKey } from './services/geminiService';
+import { fetchKanjiSet } from './services/dataService';
 
 export default function App() {
   const [phase, setPhase] = useState<AppPhase>('landing');
@@ -41,27 +41,7 @@ export default function App() {
   
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [apiKeySaved, setApiKeySaved] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setApiKeyInput(getApiKey());
-  }, [isApiKeyOpen]);
-
-  const handleSaveApiKey = () => {
-    setApiKey(apiKeyInput);
-    setApiKeySaved(true);
-    setTimeout(() => setApiKeySaved(false), 1500);
-  };
-
-  const handleResetApiKey = () => {
-    setApiKey('');
-    setApiKeyInput(getDefaultApiKey());
-    setApiKeySaved(true);
-    setTimeout(() => setApiKeySaved(false), 1500);
-  };
 
   // Load mastered items from localStorage on mount
   useEffect(() => {
@@ -310,8 +290,8 @@ export default function App() {
               : '한자의 기초가 되는 214개 부수를 학습합니다.'}
           </p>
 
-          <div className="flex items-center justify-between gap-3 pt-2 border-t border-[#F5F5F0]">
-            {Object.keys(masteredItems).length > 0 ? (
+          {Object.keys(masteredItems).length > 0 && (
+            <div className="flex items-center justify-center pt-2 border-t border-[#F5F5F0]">
               <button
                 onClick={() => setIsMasteredListOpen(true)}
                 className="text-[10px] font-bold text-[#5A5A40] flex items-center gap-1 hover:text-[#141414]"
@@ -319,15 +299,8 @@ export default function App() {
                 <CheckCircle2 size={12} className="text-[#22C55E]" />
                 마스터 {Object.keys(masteredItems).length}개
               </button>
-            ) : <span />}
-            <button
-              onClick={() => setIsApiKeyOpen(true)}
-              className="text-[10px] font-bold text-[#5A5A40] flex items-center gap-1 hover:text-[#141414]"
-            >
-              <Sparkles size={12} />
-              API 키
-            </button>
-          </div>
+            </div>
+          )}
 
           {isLoading && (
             <div className="pt-2 flex items-center justify-center gap-2 text-[#5A5A40]">
@@ -336,102 +309,23 @@ export default function App() {
             </div>
           )}
 
-          {errorMessage && !isLoading && (() => {
-            const isApiKeyError = /api key|permission_denied|403|leaked|api_key/i.test(errorMessage);
-            return (
-              <div className="pt-2 border-t border-[#F5F5F0]">
-                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-left">
-                  <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">오류</p>
-                  <p className="text-[11px] text-red-700 break-words leading-snug line-clamp-3">{errorMessage}</p>
-                  {isApiKeyError && (
-                    <p className="text-[10px] text-red-700 mt-2 leading-snug">
-                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline font-black">aistudio.google.com</a> 에서 새 키 발급 후 교체하세요.
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-2">
-                    {isApiKeyError && (
-                      <button
-                        onClick={() => { setErrorMessage(null); setIsApiKeyOpen(true); }}
-                        className="text-[9px] font-black text-white bg-red-600 px-2.5 py-1.5 rounded-lg uppercase tracking-widest"
-                      >
-                        API 키 변경
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setErrorMessage(null)}
-                      className="text-[9px] font-black text-red-600 uppercase tracking-widest underline"
-                    >
-                      닫기
-                    </button>
-                  </div>
-                </div>
+          {errorMessage && !isLoading && (
+            <div className="pt-2 border-t border-[#F5F5F0]">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-left">
+                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest mb-1">알림</p>
+                <p className="text-[11px] text-red-700 break-words leading-snug">{errorMessage}</p>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="mt-2 text-[9px] font-black text-red-600 uppercase tracking-widest underline"
+                >
+                  닫기
+                </button>
               </div>
-            );
-          })()}
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
-  );
-
-  const apiKeyModal = (
-    <AnimatePresence>
-      {isApiKeyOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsApiKeyOpen(false)}
-            className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm"
-          />
-          <div className="fixed inset-0 z-[85] flex items-center justify-center p-4 pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 30 }}
-              className="bg-white w-full max-w-md p-8 rounded-[32px] shadow-2xl pointer-events-auto border border-[#E4E3E0] space-y-5"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-black text-[#141414] uppercase tracking-tight">Gemini API 키</h3>
-                <button
-                  onClick={() => setIsApiKeyOpen(false)}
-                  className="p-1 hover:bg-[#F5F5F0] rounded-full text-[#141414]"
-                >
-                  <X size={22} />
-                </button>
-              </div>
-              <p className="text-xs text-[#888] leading-relaxed">
-                키를 비워두고 저장하면 기본 키가 사용됩니다. 변경한 키는 이 기기에만 저장됩니다.
-              </p>
-              <input
-                type="text"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                placeholder="AIzaSy..."
-                spellCheck={false}
-                autoCorrect="off"
-                autoCapitalize="off"
-                className="w-full bg-[#F5F5F0] border-2 border-[#E4E3E0] rounded-2xl px-5 py-4 text-sm font-mono focus:border-[#141414] focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleResetApiKey}
-                  className="flex-1 bg-[#F5F5F0] text-[#141414] py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#E4E3E0] transition-all"
-                >
-                  기본값
-                </button>
-                <button
-                  onClick={handleSaveApiKey}
-                  className="flex-[2] bg-[#141414] text-white py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
-                  {apiKeySaved ? '저장됨 ✓' : '저장'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </AnimatePresence>
   );
 
   const mainContent = (
@@ -648,7 +542,6 @@ export default function App() {
   return (
     <>
       {phase === 'landing' ? landingContent : mainContent}
-      {apiKeyModal}
 
       {/* Floating Memo Toggle Button */}
       <button 

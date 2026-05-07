@@ -1,0 +1,11 @@
+{
+  "appId": "com.bojung.gengen",
+  "appName": "言言日本語",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

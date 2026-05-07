@@ -26,3 +26,18 @@ env/
 # 기타
 .DS_Store
 *.log
+
+# Web/Node
+web/node_modules/
+web/dist/
+web/.env
+
+# Android build outputs
+web/android/.gradle/
+web/android/build/
+web/android/app/build/
+web/android/local.properties
+web/android/captures/
+web/android/.idea/
+web/android/app/release/
+**/*.iml

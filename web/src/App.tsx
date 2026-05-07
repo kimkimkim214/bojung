@@ -44,6 +44,7 @@ export default function App() {
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [apiKeySaved, setApiKeySaved] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     setApiKeyInput(getApiKey());
@@ -94,47 +95,61 @@ export default function App() {
   // Load initial set
   const startStudy = async (selectedLevel: string, selectedMode: StudyMode) => {
     setIsLoading(true);
+    setErrorMessage(null);
     setLevel(selectedLevel);
     setMode(selectedMode);
-    // Include current mastered words to exclude them from the new set
-    const excludeWords = (Object.values(masteredItems) as KanjiItem[]).map(k => k.word);
-    const set = await fetchKanjiSet(selectedLevel, selectedMode, 10, excludeWords);
-    // Double-check and filter out any leaking mastered items
-    const filteredSet = set.filter(item => !masteredItems[item.word]);
-    if (filteredSet.length > 0) {
-      setKanjiList(filteredSet);
-      setStudyPool([...filteredSet]);
-      setCurrentIndex(0);
-      setPhase('study');
-      setSessionCount(0);
-      setCorrectStreak({});
-      setMemoTab('current');
-      setIsReviewOpen(false);
-      setIsMasteredListOpen(true); // Automatically open the floating pad
+    try {
+      const excludeWords = (Object.values(masteredItems) as KanjiItem[]).map(k => k.word);
+      const set = await fetchKanjiSet(selectedLevel, selectedMode, 10, excludeWords);
+      const filteredSet = set.filter(item => !masteredItems[item.word]);
+      if (filteredSet.length > 0) {
+        setKanjiList(filteredSet);
+        setStudyPool([...filteredSet]);
+        setCurrentIndex(0);
+        setPhase('study');
+        setSessionCount(0);
+        setCorrectStreak({});
+        setMemoTab('current');
+        setIsReviewOpen(false);
+        setIsMasteredListOpen(true);
+      } else {
+        setErrorMessage('받은 데이터가 비어 있습니다. 다시 시도해주세요.');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErrorMessage(`불러오기 실패: ${msg}`);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const nextSet = async () => {
     setIsLoading(true);
-    // Exclude current list AND all mastered items globally
-    const excludeWords = [...kanjiList.map(k => k.word), ...(Object.values(masteredItems) as KanjiItem[]).map(k => k.word)];
-    const set = await fetchKanjiSet(level, mode, 10, excludeWords);
-    // Double-check and filter out any leaking mastered items
-    const filteredSet = set.filter(item => !masteredItems[item.word]);
-    if (filteredSet.length > 0) {
-      setKanjiList(filteredSet);
-      setStudyPool([...filteredSet]);
-      setCurrentIndex(0);
-      setFeedback('none');
-      setUserInput('');
-      setSessionCount(0);
-      setCorrectStreak({});
-      setMemoTab('current');
-      setIsReviewOpen(false);
-      setIsMasteredListOpen(true); // Automatically open the floating pad for the new set
+    setErrorMessage(null);
+    try {
+      const excludeWords = [...kanjiList.map(k => k.word), ...(Object.values(masteredItems) as KanjiItem[]).map(k => k.word)];
+      const set = await fetchKanjiSet(level, mode, 10, excludeWords);
+      const filteredSet = set.filter(item => !masteredItems[item.word]);
+      if (filteredSet.length > 0) {
+        setKanjiList(filteredSet);
+        setStudyPool([...filteredSet]);
+        setCurrentIndex(0);
+        setFeedback('none');
+        setUserInput('');
+        setSessionCount(0);
+        setCorrectStreak({});
+        setMemoTab('current');
+        setIsReviewOpen(false);
+        setIsMasteredListOpen(true);
+      } else {
+        setErrorMessage('받은 데이터가 비어 있습니다. 다시 시도해주세요.');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErrorMessage(`불러오기 실패: ${msg}`);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const currentItem = studyPool[currentIndex];
@@ -316,6 +331,28 @@ export default function App() {
               Gemini API 키 설정
             </button>
           </div>
+
+          {isLoading && (
+            <div className="pt-4 border-t border-[#F5F5F0] flex items-center justify-center gap-3 text-[#5A5A40]">
+              <RefreshCcw className="animate-spin" size={18} />
+              <span className="text-xs font-black uppercase tracking-widest">AI 큐레이션 중...</span>
+            </div>
+          )}
+
+          {errorMessage && !isLoading && (
+            <div className="pt-4 border-t border-[#F5F5F0]">
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-left">
+                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">오류</p>
+                <p className="text-xs text-red-700 break-words leading-relaxed">{errorMessage}</p>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="mt-3 text-[10px] font-black text-red-600 uppercase tracking-widest underline"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

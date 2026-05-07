@@ -1,6 +1,6 @@
 {
   "appId": "com.bojung.gengen",
-  "appName": "言言日本語",
+  "appName": "언언일본어",
   "webDir": "dist",
   "android": {
     "allowMixedContent": true

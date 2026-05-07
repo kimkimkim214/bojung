@@ -65,34 +65,41 @@ export async function fetchKanjiSet(level: string = "N5", mode: StudyMode = "voc
   Do NOT include any items you have previously provided if they are in the list above.
   Ensuring accurate data for Korean learners of Japanese is paramount.`;
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: prompt,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            id: { type: Type.STRING },
-            word: { type: Type.STRING },
-            kanaReading: { type: Type.STRING },
-            hangulReading: { type: Type.STRING },
-            meaning: { type: Type.STRING },
-            example: { type: Type.STRING },
-            level: { type: Type.STRING },
-          },
-          required: ["id", "word", "kanaReading", "hangulReading", "meaning", "example", "level"]
-        }
+  const config = {
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          word: { type: Type.STRING },
+          kanaReading: { type: Type.STRING },
+          hangulReading: { type: Type.STRING },
+          meaning: { type: Type.STRING },
+          example: { type: Type.STRING },
+          level: { type: Type.STRING },
+        },
+        required: ["id", "word", "kanaReading", "hangulReading", "meaning", "example", "level"]
       }
     }
-  });
+  };
 
-  try {
-    return JSON.parse(response.text || "[]") as KanjiItem[];
-  } catch (error) {
-    console.error("Failed to parse Kanji JSON:", error);
-    return [];
+  const candidateModels = ["gemini-3-flash-preview", "gemini-2.5-flash"];
+  let lastError: unknown = null;
+  for (const model of candidateModels) {
+    try {
+      const response = await ai.models.generateContent({ model, contents: prompt, config });
+      const text = response.text || "[]";
+      try {
+        return JSON.parse(text) as KanjiItem[];
+      } catch (parseError) {
+        throw new Error(`응답 파싱 실패 (${model}): ${text.slice(0, 120)}`);
+      }
+    } catch (e) {
+      lastError = e;
+    }
   }
+  const msg = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(msg || "Gemini 호출 실패");
 }

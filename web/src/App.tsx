@@ -339,20 +339,38 @@ export default function App() {
             </div>
           )}
 
-          {errorMessage && !isLoading && (
-            <div className="pt-4 border-t border-[#F5F5F0]">
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-left">
-                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">오류</p>
-                <p className="text-xs text-red-700 break-words leading-relaxed">{errorMessage}</p>
-                <button
-                  onClick={() => setErrorMessage(null)}
-                  className="mt-3 text-[10px] font-black text-red-600 uppercase tracking-widest underline"
-                >
-                  닫기
-                </button>
+          {errorMessage && !isLoading && (() => {
+            const isApiKeyError = /api key|permission_denied|403|leaked|api_key/i.test(errorMessage);
+            return (
+              <div className="pt-4 border-t border-[#F5F5F0]">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-left">
+                  <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">오류</p>
+                  <p className="text-xs text-red-700 break-words leading-relaxed">{errorMessage}</p>
+                  {isApiKeyError && (
+                    <p className="text-[11px] text-red-700 mt-3 leading-relaxed">
+                      API 키가 만료/차단된 것 같습니다. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline font-black">aistudio.google.com</a> 에서 새 키를 발급받아 아래 버튼에서 교체하세요.
+                    </p>
+                  )}
+                  <div className="flex gap-2 mt-3">
+                    {isApiKeyError && (
+                      <button
+                        onClick={() => { setErrorMessage(null); setIsApiKeyOpen(true); }}
+                        className="text-[10px] font-black text-white bg-red-600 px-3 py-2 rounded-xl uppercase tracking-widest"
+                      >
+                        API 키 변경
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setErrorMessage(null)}
+                      className="text-[10px] font-black text-red-600 uppercase tracking-widest underline"
+                    >
+                      닫기
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </motion.div>
     </div>

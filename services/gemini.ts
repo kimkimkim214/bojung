@@ -148,25 +148,27 @@ export const generateMangaArt = async (inputs: MangaInputs): Promise<string> => 
     (char.outfitImages || []).slice(0, 2).forEach(img => outfitParts.push(toInlinePart(img)));
   });
 
-  let inputRoster = `INPUT IMAGES:\n`;
-  let idx = 1;
   const TOTAL_FACE = faceParts.length;
   const TOTAL_OUTFIT = outfitParts.length;
   const TOTAL_STYLE = styleParts.length;
 
+  let inputRoster = `INPUT IMAGES:\n`;
+  inputRoster += `  - Image 1: 3D BASE MODEL (THE CANVAS TO TRANSFORM — this is what gets redrawn).\n`;
+  let idx = 2;
   if (TOTAL_STYLE > 0) {
-    inputRoster += `  - Images ${idx}–${idx + TOTAL_STYLE - 1}: MANGA STYLE REFERENCE.\n`;
+    inputRoster += `  - Images ${idx}–${idx + TOTAL_STYLE - 1}: MANGA STYLE REFERENCE (visual dictionary only — DO NOT redraw these).\n`;
     idx += TOTAL_STYLE;
   }
   if (TOTAL_FACE > 0) {
-    inputRoster += `  - Images ${idx}–${idx + TOTAL_FACE - 1}: FACE REFERENCES for characters.\n`;
+    inputRoster += `  - Images ${idx}–${idx + TOTAL_FACE - 1}: FACE REFERENCES (identity lookup only — DO NOT redraw these).\n`;
     idx += TOTAL_FACE;
   }
   if (TOTAL_OUTFIT > 0) {
-    inputRoster += `  - Images ${idx}–${idx + TOTAL_OUTFIT - 1}: OUTFIT REFERENCES for characters.\n`;
+    inputRoster += `  - Images ${idx}–${idx + TOTAL_OUTFIT - 1}: OUTFIT REFERENCES (clothing lookup only — DO NOT redraw these).\n`;
     idx += TOTAL_OUTFIT;
   }
-  inputRoster += `  - Image ${idx}: 3D BASE MODEL (Source of pose and layout).`;
+  // Trim trailing newline so the roster ends cleanly inside the prompt template.
+  inputRoster = inputRoster.replace(/\n$/, '');
 
   let characterDetails = (characters || []).map(c => {
     let physText = [];
@@ -174,7 +176,7 @@ export const generateMangaArt = async (inputs: MangaInputs): Promise<string> => 
     if (c.weight) physText.push(`Weight: ${c.weight}`);
     if (c.bodyType) physText.push(`Physique: ${c.bodyType}`);
     const physStr = physText.length > 0 ? ` Physical attributes: ${physText.join(', ')}.` : '';
-    return `- Character "${c.name}": Mapping to the figure in the 3D model that matches this character's identity.${physStr} Features: ${c.facePrompt}. Outfit: ${c.outfitPrompt}.`;
+    return `- The figure in Image 1 (3D BASE MODEL) that matches "${c.name}" should be drawn with these features (looked up from face/outfit references, NOT copied as a whole image):${physStr} Features: ${c.facePrompt}. Outfit: ${c.outfitPrompt}.`;
   }).join('\n');
 
   let styleInstruction = "Traditional Japanese manga pen-and-ink style (black and white, screentones).";
@@ -188,21 +190,24 @@ export const generateMangaArt = async (inputs: MangaInputs): Promise<string> => 
     ${inputRoster}
 
     PRIORITY ORDER (ABSOLUTE — DO NOT DEVIATE):
-    1. STORYBOARD GEOMETRY LOCK — Image ${idx} is the ground truth for ALL of the following.
+    1. STORYBOARD GEOMETRY LOCK — Image 1 (the 3D BASE MODEL) is the ONLY image being
+       transformed. Every aspect of the output's composition, pose, framing, and subject
+       placement comes from Image 1, NOT from any reference image.
        You MUST replicate, not reinterpret:
-       a. ASPECT RATIO & CROP: Output canvas matches the 3D base model's frame exactly.
-          The edges of the 3D base model ARE the edges of the output.
-       b. SHOT SIZE: If the 3D base model shows a close-up (face/upper body only), the output
+       a. ASPECT RATIO & CROP: Output canvas matches Image 1's frame exactly.
+          The edges of Image 1 ARE the edges of the output.
+       b. SHOT SIZE: If Image 1 shows a close-up (face/upper body only), the output
           is a close-up. If it shows a wide shot, the output is a wide shot.
-          NEVER expand the framing to show more of the body than the 3D base model shows.
-          NEVER zoom in or out from what the 3D base model depicts.
-       c. CAMERA ANGLE: Eye-level / high-angle / low-angle / Dutch — match it precisely.
+          NEVER expand the framing to show more of the body than Image 1 shows.
+          NEVER zoom in or out from what Image 1 depicts.
+       c. CAMERA ANGLE: Eye-level / high-angle / low-angle / Dutch — match Image 1 precisely.
        d. COMPOSITION: Subject placement within the frame (rule-of-thirds positions,
-          headroom, lead room, negative space) is preserved.
+          headroom, lead room, negative space) is preserved from Image 1.
        e. POSE & MOTION: Body axis, limb angles, weight distribution, motion lines,
-          and silhouette dynamics are preserved. Do not "fix" or "neutralize" an exaggerated pose.
+          and silhouette dynamics are preserved from Image 1. Do not "fix" or "neutralize"
+          an exaggerated pose.
        f. SILHOUETTE / FORM: The overall shape of each subject within the frame matches
-          the 3D base model's silhouette.
+          Image 1's silhouette.
 
     2. CHARACTER MAPPING:
     ${characterDetails}
@@ -216,6 +221,22 @@ export const generateMangaArt = async (inputs: MangaInputs): Promise<string> => 
     WHAT TO IGNORE FROM THE 3D BASE MODEL (and ONLY these):
     - Generic placeholder faces and clothing drawn on the figures.
     EVERYTHING ELSE in the 3D BASE MODEL — frame edges, pose, scale within frame, angle, silhouette — is BINDING.
+
+    CRITICAL — ROLE OF EACH IMAGE TYPE (DO NOT CONFUSE):
+    - The 3D BASE MODEL (Image 1) is THE ONLY image you transform. It is the canvas.
+      The output must depict the SAME SCENE, SAME POSES, SAME COMPOSITION as Image 1,
+      just rendered in manga line art.
+    - STYLE REFERENCE images are a VISUAL DICTIONARY for line quality and inking.
+      They are NOT subjects. NEVER redraw their content. NEVER copy their poses, composition, or framing.
+    - FACE REFERENCE images are an IDENTITY LOOKUP — use them only to recognize WHO each
+      figure in the 3D base model is, so you can draw their face correctly. NEVER use a face
+      reference's pose, expression, framing, or background. NEVER redraw the face reference itself.
+    - OUTFIT REFERENCE images are a CLOTHING LOOKUP — use them only to know WHAT each character
+      wears. NEVER copy the outfit reference's pose, body, or background.
+    - If the output resembles any reference image's composition rather than the 3D BASE MODEL's
+      composition, the output is WRONG.
+
+    FINAL CHECK: Before generating, confirm — the output's framing, pose, and scene MUST come from Image 1 (3D BASE MODEL). If you are about to redraw a reference image, STOP and re-anchor to Image 1.
 
     User Instruction: "${userPrompt ? userPrompt : "Convert this 3D scene into a Manga panel illustration."}"
   `;
@@ -234,10 +255,10 @@ export const generateMangaArt = async (inputs: MangaInputs): Promise<string> => 
       contents: {
         parts: [
           { text: systemPrompt },
+          baseImagePart,
           ...styleParts,
           ...faceParts,
           ...outfitParts,
-          baseImagePart,
         ]
       }
     });

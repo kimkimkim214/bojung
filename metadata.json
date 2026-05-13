@@ -1,0 +1,5 @@
+{
+  "name": "스케치>3d",
+  "description": "Transform 2D sketches into 3D gray clay model renderings with customizable body types and styles using Gemini.",
+  "requestFramePermissions": []
+}

@@ -26,3 +26,7 @@ env/
 # 기타
 .DS_Store
 *.log
+
+# Node
+node_modules/
+dist/

@@ -218,7 +218,9 @@ def run_backtest(tickers, bull_sma, label):
 
     trades = []           # (date, ticker, action, price, shares, pnl_pct)
     daily_equity = {}     # date → equity
-    today_opens = defaultdict(dict)   # date → {ticker: open}
+    today_opens = defaultdict(dict)        # date → {ticker: 09:30 open} (참고용)
+    bar30_open  = defaultdict(dict)        # date → {ticker: 14:30 open} ★ 30분 봉 시가
+    sell_call_count = 0                    # 디버그: should_sell 호출 횟수
     last_rebalance_date = None
     last_loop_date = None
 
@@ -227,21 +229,27 @@ def run_backtest(tickers, bull_sma, label):
         st = states[t]
         st.last_close = row["Close"]
 
-        # 오늘 시가 기록 (장 첫 봉의 Open)
+        # 시가 기록
         if t not in today_opens[date]:
             today_opens[date][t] = row["Open"]
 
+        h, m, wd = ts.hour, ts.minute, ts.weekday()
+
+        # 14:30 봉 시가 기록 (30분 봉의 시가)
+        if h == 14 and m == 30 and t not in bar30_open[date]:
+            bar30_open[date][t] = row["Open"]
+
         d_info = _sma_lookup(daily[t], date)
         if d_info is None:
+            # 일일 평가 누락 방지
+            if last_loop_date is not None and date != last_loop_date:
+                daily_equity[last_loop_date] = _eval_equity(states)
+            last_loop_date = date
             continue
 
-        price = row["Close"]
         sma_trend_prev = d_info["sma_trend_prev"]
         sma_trend_pp   = d_info["sma_trend_pp"]
         sma_bull_prev  = d_info["sma_bull_prev"]
-        today_open     = today_opens[date].get(t)
-
-        h, m, wd = ts.hour, ts.minute, ts.weekday()
 
         # 09:35 — 초기 진입 + (월요일이면) 가중치 재계산
         if h == INIT_HOUR and m == INIT_MIN:
@@ -249,24 +257,30 @@ def run_backtest(tickers, bull_sma, label):
                 _rebalance_buckets(states, tickers, daily, date)
                 last_rebalance_date = date
 
-            if st.shares <= 0 and is_bull_market(price, sma_bull_prev) \
-                              and is_trend_strong(price, sma_trend_prev, sma_trend_pp):
-                _buy(st, price, ts, t, trades,
+            init_price = row["Open"]   # 09:35 ET 정각 가격
+            if st.shares <= 0 and is_bull_market(init_price, sma_bull_prev) \
+                              and is_trend_strong(init_price, sma_trend_prev, sma_trend_pp):
+                _buy(st, init_price, ts, t, trades,
                      cash_use=st.asset_cash * INITIAL_BUY_RATIO, action="INIT")
 
-        # 15:00 — 매도/추매 (30분 봉)
+        # 15:00 — 30분 봉 (14:30~15:00) 마감 시점에서 매도/추매 검사. 하루 1회만.
         elif h == SELL_HOUR and m == SELL_MIN:
-            if st.shares > 0:
-                if should_sell(price, today_open, sma_trend_prev, sma_trend_pp):
-                    _sell(st, price, ts, t, trades)
+            # 30분 봉 시가 = 14:30 봉의 Open. 없으면 (저거래 종목 등) 스킵.
+            ref_open = bar30_open[date].get(t)
+            bar_close_price = row["Open"]   # 15:00 ET 정각 = 14:30~15:00 30분 봉의 종가
+            if ref_open is not None and st.shares > 0:
+                sell_call_count += 1
+                if should_sell(bar_close_price, ref_open, sma_trend_prev, sma_trend_pp):
+                    _sell(st, bar_close_price, ts, t, trades)
                 else:
-                    drawdown_pct = (price / st.avg_cost - 1.0) * 100.0
+                    drawdown_pct = (bar_close_price / st.avg_cost - 1.0) * 100.0
                     if drawdown_pct <= ADD_THRESHOLD_PCT and st.asset_cash > 0:
-                        _buy(st, price, ts, t, trades,
+                        _buy(st, bar_close_price, ts, t, trades,
                              cash_use=st.asset_cash * BUY_RATIO_OF_CASH, action="ADD")
 
-        # 그 외 5분 — 빠른 재진입
+        # 그 외 5분 — 빠른 재진입만
         else:
+            price = row["Close"]
             if st.shares <= 0 and st.last_sell_time is not None:
                 if (ts - st.last_sell_time) <= timedelta(minutes=QUICK_REENTRY_MIN):
                     if price > st.last_sell_price \
@@ -284,6 +298,7 @@ def run_backtest(tickers, bull_sma, label):
     if last_loop_date is not None:
         daily_equity[last_loop_date] = _eval_equity(states)
 
+    print(f"  should_sell 호출 횟수: {sell_call_count}  (=하루 1회 × {len(tickers)}종목 × 거래일수 한도 내)")
     return _summarize(label, daily_equity, trades, tickers)
 
 

@@ -145,8 +145,11 @@ def compute_weights(tickers, daily_map, ref_date):
     raw = {}
     for t in tickers:
         d = daily_map[t]
+        ref_ts = pd.Timestamp(ref_date)
+        if d.index.tz is not None and ref_ts.tz is None:
+            ref_ts = ref_ts.tz_localize(d.index.tz)
         # ref_date 이전의 가장 최근 일봉
-        idx = d.index.searchsorted(pd.Timestamp(ref_date), side="right") - 1
+        idx = d.index.searchsorted(ref_ts, side="right") - 1
         if idx < MOMENTUM_LOOKBACK:
             raw[t] = 0.0
             continue
